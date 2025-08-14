@@ -43,6 +43,8 @@ A powerful, feature-rich, and modern jQuery plugin that transforms simple textar
 
 ## 🚀 Quick Start
 
+**That's it! No hidden elements, no complex setup - just include the files and initialize!**
+
 ### 1. Include Dependencies
 ```html
 <!-- Font Awesome for icons -->
@@ -58,12 +60,7 @@ A powerful, feature-rich, and modern jQuery plugin that transforms simple textar
 
 ### 2. HTML Structure
 ```html
-<!-- Hidden elements (required) -->
-<input type="file" id="ranjitImageUpload" accept="image/*" style="display: none;">
-<div id="ranjitHelpModal" class="ranjit-modal-overlay"></div>
-<div id="ranjitEmojiModal" class="ranjit-modal-overlay"></div>
-
-<!-- Your textarea -->
+<!-- Just add your textarea - no hidden elements needed! -->
 <textarea id="myEditor" name="content">
   <h2>Welcome to Ranjit Editor!</h2>
   <p>Start editing your content here...</p>
@@ -73,6 +70,10 @@ A powerful, feature-rich, and modern jQuery plugin that transforms simple textar
 ### 3. Initialize Plugin
 ```javascript
 $(document).ready(function() {
+  // Basic usage
+  $('#myEditor').ranjitEditor();
+  
+  // Or with custom options
   $('#myEditor').ranjitEditor({
     autosave: true,
     wordCount: true,

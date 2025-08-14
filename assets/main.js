@@ -122,6 +122,9 @@
     `;
 
     return this.each(function () {
+      // Ensure required elements exist before initializing
+      ensureRequiredElements();
+      
       const $originalTextarea = $(this);
       const $editor = $(editorTemplate);
       const editorId = generateId();
@@ -266,9 +269,44 @@
         $contentArea.removeClass('drag-over');
         const files = e.originalEvent.dataTransfer.files;
         if (files.length > 0 && files[0].type.startsWith('image/')) {
-          const reader = new FileReader();
-          reader.onload = (e) => instance.exec('insertImage', e.target.result);
-          reader.readAsDataURL(files[0]);
+          activeEditorInstance = instance;
+          showImageBuilder(instance);
+          // Auto-load the dropped file
+          setTimeout(() => {
+            const file = files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              const img = new Image();
+              img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                let { width, height } = img;
+                const maxSize = 1200;
+                if (width > maxSize || height > maxSize) {
+                  if (width > height) {
+                    height = (height * maxSize) / width;
+                    width = maxSize;
+                  } else {
+                    width = (width * maxSize) / height;
+                    height = maxSize;
+                  }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                
+                // Show in image builder
+                if ($('#imagePreview').length) {
+                  $('#imagePreview').attr('src', compressedDataUrl);
+                  $('#imagePreviewSection').show();
+                  window.currentImageData = { src: compressedDataUrl, width, height, size: 50, align: 'left', display: 'inline', alt: 'Image' };
+                }
+              };
+              img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+          }, 100);
         }
       });
       
@@ -323,26 +361,13 @@
           }
           
           case "insertImage": {
-            $("#ranjitImageUpload").click();
+            showImageBuilder(instance);
             break;
           }
           
           case "insertTable": {
             instance.restoreSelection(selection);
-            const rows = prompt("Number of rows:", "3");
-            const cols = prompt("Number of columns:", "3");
-            if (rows > 0 && cols > 0) {
-              let table = '<table border="1" style="border-collapse: collapse; width: 100%;"><tbody>';
-              for (let r = 0; r < rows; r++) {
-                table += '<tr>';
-                for (let c = 0; c < cols; c++) {
-                  table += '<td style="padding: 8px; border: 1px solid #ddd;">&nbsp;</td>';
-                }
-                table += '</tr>';
-              }
-              table += '</tbody></table><p><br></p>';
-              instance.exec('insertHTML', table);
-            }
+            showTableBuilder(instance);
             break;
           }
           
@@ -429,27 +454,326 @@
     });
   };
 
-  // Shared event handlers
-  $(function () {
-    // Image upload with compression
-    $("#ranjitImageUpload").on("change", function () {
-      if (this.files && this.files[0] && activeEditorInstance) {
-        const file = this.files[0];
-        if (file.size > 2 * 1024 * 1024) { // 2MB limit
-          alert('Image size should be less than 2MB');
-          return;
-        }
+  // Auto-create required elements if they don't exist
+  function ensureRequiredElements() {
+    if (!$('#ranjitImageUpload').length) {
+      $('body').append('<input type="file" id="ranjitImageUpload" accept="image/*" style="display: none;">');
+    }
+    if (!$('#ranjitHelpModal').length) {
+      $('body').append('<div id="ranjitHelpModal" class="ranjit-modal-overlay"></div>');
+    }
+    if (!$('#ranjitEmojiModal').length) {
+      $('body').append('<div id="ranjitEmojiModal" class="ranjit-modal-overlay"></div>');
+    }
+    if (!$('#ranjitTableModal').length) {
+      $('body').append('<div id="ranjitTableModal" class="ranjit-modal-overlay"></div>');
+    }
+    if (!$('#ranjitImageModal').length) {
+      $('body').append('<div id="ranjitImageModal" class="ranjit-modal-overlay"></div>');
+    }
+  }
+  
+  // Image builder function
+  function showImageBuilder(editorInstance) {
+    const imageBuilderHtml = `
+      <div class="ranjit-modal-content image-builder-modal">
+        <span class="ranjit-modal-close">&times;</span>
+        <h3>🖼️ Insert Image</h3>
         
+        <div class="image-builder-section">
+          <h4>📁 Upload Images</h4>
+          <div class="upload-options">
+            <button class="upload-mode-btn active" data-mode="single">📷 Single Image</button>
+            <button class="upload-mode-btn" data-mode="multiple">🖼️ Multiple Images</button>
+          </div>
+          <div class="upload-area" id="imageUploadArea">
+            <div class="upload-content">
+              <i class="fas fa-cloud-upload-alt"></i>
+              <p id="uploadText">Drag & Drop or Click to Upload</p>
+              <small id="uploadHint">Supports: JPG, PNG, GIF (Max 2MB each)</small>
+            </div>
+            <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
+          </div>
+        </div>
+        
+        <div class="image-builder-section">
+          <h4>🔗 Image URL</h4>
+          <div class="url-input-group">
+            <input type="url" id="imageUrlInput" placeholder="https://example.com/image.jpg">
+            <button class="image-btn" id="loadImageUrl">Load</button>
+          </div>
+        </div>
+        
+        <div class="gallery-preview-section" id="galleryPreviewSection" style="display: none;">
+          <h4>🖼️ Gallery Preview</h4>
+          <div class="gallery-images-container" id="galleryImagesContainer"></div>
+          <div class="gallery-controls">
+            <button class="image-btn" id="addMoreImages">➕ Add More Images</button>
+            <button class="image-btn" id="clearGallery">🗑️ Clear All</button>
+            <button class="image-btn primary" id="insertGalleryBtn">✨ Insert Gallery</button>
+          </div>
+        </div>
+        
+        <div class="image-preview-section" id="imagePreviewSection" style="display: none;">
+          <h4>🎨 Image Settings</h4>
+          <div class="image-preview-container">
+            <img id="imagePreview" src="" alt="Preview">
+          </div>
+          
+          <div class="image-controls">
+            <div class="control-group">
+              <label>📏 Size:</label>
+              <div class="size-buttons">
+                <button class="size-btn active" data-size="25">25%</button>
+                <button class="size-btn" data-size="50">50%</button>
+                <button class="size-btn" data-size="75">75%</button>
+                <button class="size-btn" data-size="100">100%</button>
+                <input type="number" id="customSize" placeholder="Custom" min="10" max="200" style="width: 80px;">
+              </div>
+            </div>
+            
+            <div class="control-group">
+              <label>📍 Alignment:</label>
+              <div class="align-buttons">
+                <button class="align-btn active" data-align="left"><i class="fas fa-align-left"></i> Left</button>
+                <button class="align-btn" data-align="center"><i class="fas fa-align-center"></i> Center</button>
+                <button class="align-btn" data-align="right"><i class="fas fa-align-right"></i> Right</button>
+              </div>
+            </div>
+            
+            <div class="control-group">
+              <label>🎯 Display:</label>
+              <div class="display-buttons">
+                <button class="display-btn active" data-display="inline">📄 Inline</button>
+                <button class="display-btn" data-display="block">📋 Block</button>
+                <button class="display-btn" data-display="gallery">🖼️ Gallery</button>
+              </div>
+            </div>
+            
+            <div class="control-group">
+              <label>✏️ Alt Text:</label>
+              <input type="text" id="imageAltText" placeholder="Describe the image...">
+            </div>
+            
+            <div class="insert-buttons">
+              <button class="image-btn primary" id="insertImageBtn">✨ Insert Image</button>
+              <button class="image-btn" id="addToGalleryBtn">📚 Add to Gallery</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    $('#ranjitImageModal').html(imageBuilderHtml).css('display', 'flex');
+    
+    let currentImageData = null;
+    let galleryImages = [];
+    let uploadMode = 'single';
+    
+    // Upload mode toggle
+    $('.upload-mode-btn').on('click', function() {
+      $('.upload-mode-btn').removeClass('active');
+      $(this).addClass('active');
+      uploadMode = $(this).data('mode');
+      
+      if (uploadMode === 'multiple') {
+        $('#imageFileInput').attr('multiple', true);
+        $('#uploadText').text('Select Multiple Images for Gallery');
+        $('#uploadHint').text('Hold Ctrl/Cmd to select multiple files (Max 2MB each)');
+      } else {
+        $('#imageFileInput').removeAttr('multiple');
+        $('#uploadText').text('Drag & Drop or Click to Upload');
+        $('#uploadHint').text('Supports: JPG, PNG, GIF (Max 2MB)');
+      }
+    });
+    
+    // Upload area click
+    $('#imageUploadArea').on('click', function() {
+      $('#imageFileInput').click();
+    });
+    
+    // File input change
+    $('#imageFileInput').on('change', function() {
+      if (uploadMode === 'multiple' && this.files.length > 1) {
+        handleMultipleFiles(this.files);
+      } else if (this.files[0]) {
+        handleImageFile(this.files[0]);
+      }
+    });
+    
+    // Drag and drop
+    $('#imageUploadArea').on('dragover', function(e) {
+      e.preventDefault();
+      $(this).addClass('drag-over');
+    }).on('dragleave', function() {
+      $(this).removeClass('drag-over');
+    }).on('drop', function(e) {
+      e.preventDefault();
+      $(this).removeClass('drag-over');
+      const files = e.originalEvent.dataTransfer.files;
+      
+      if (uploadMode === 'multiple' && files.length > 1) {
+        handleMultipleFiles(files);
+      } else if (files[0] && files[0].type.startsWith('image/')) {
+        handleImageFile(files[0]);
+      }
+    });
+    
+    // URL input
+    $('#loadImageUrl').on('click', function() {
+      const url = $('#imageUrlInput').val().trim();
+      if (url) {
+        handleImageUrl(url);
+      }
+    });
+    
+    // Size buttons
+    $('.size-btn').on('click', function() {
+      $('.size-btn').removeClass('active');
+      $(this).addClass('active');
+      updateImagePreview();
+    });
+    
+    // Custom size input
+    $('#customSize').on('input', function() {
+      $('.size-btn').removeClass('active');
+      updateImagePreview();
+    });
+    
+    // Alignment buttons
+    $('.align-btn').on('click', function() {
+      $('.align-btn').removeClass('active');
+      $(this).addClass('active');
+      updateImagePreview();
+    });
+    
+    // Display buttons
+    $('.display-btn').on('click', function() {
+      $('.display-btn').removeClass('active');
+      $(this).addClass('active');
+      updateImagePreview();
+    });
+    
+    // Insert image
+    $('#insertImageBtn').on('click', function() {
+      const imageData = currentImageData || window.currentImageData;
+      if (imageData) {
+        insertImage(editorInstance, imageData);
+        $('#ranjitImageModal').hide();
+        // Clear data
+        currentImageData = null;
+        window.currentImageData = null;
+      } else {
+        alert('Please select an image first!');
+      }
+    });
+    
+    // Add to gallery
+    $('#addToGalleryBtn').on('click', function() {
+      const imageData = currentImageData || window.currentImageData;
+      if (imageData) {
+        galleryImages.push({...imageData});
+        updateGalleryPreview();
+        // Clear current image data for next image
+        currentImageData = null;
+        window.currentImageData = null;
+        $('#imagePreviewSection').hide();
+        alert(`Image added to gallery! Total: ${galleryImages.length} images`);
+      }
+    });
+    
+    // Gallery controls
+    $('#addMoreImages').on('click', function() {
+      $('#imageFileInput').click();
+    });
+    
+    $('#clearGallery').on('click', function() {
+      if (confirm('Clear all gallery images?')) {
+        galleryImages = [];
+        $('#galleryPreviewSection').hide();
+      }
+    });
+    
+    $('#insertGalleryBtn').on('click', function() {
+      if (galleryImages.length >= 2) {
+        insertGallery(editorInstance, galleryImages);
+        $('#ranjitImageModal').hide();
+        galleryImages = [];
+      } else {
+        alert('Gallery needs at least 2 images!');
+      }
+    });
+    
+    function handleImageFile(file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Image size should be less than 2MB');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          // Compress if needed
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          let { width, height } = img;
+          const maxSize = 1200;
+          if (width > maxSize || height > maxSize) {
+            if (width > height) {
+              height = (height * maxSize) / width;
+              width = maxSize;
+            } else {
+              width = (width * maxSize) / height;
+              height = maxSize;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          showImagePreview(compressedDataUrl, width, height);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    function handleImageUrl(url) {
+      const img = new Image();
+      img.onload = function() {
+        showImagePreview(url, img.width, img.height);
+      };
+      img.onerror = function() {
+        alert('Failed to load image from URL');
+      };
+      img.src = url;
+    }
+    
+    function handleMultipleFiles(files) {
+      const validFiles = Array.from(files).filter(file => 
+        file.type.startsWith('image/') && file.size <= 2 * 1024 * 1024
+      );
+      
+      if (validFiles.length === 0) {
+        alert('No valid images found. Please select image files under 2MB.');
+        return;
+      }
+      
+      let processed = 0;
+      validFiles.forEach(file => {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = function(e) {
           const img = new Image();
-          img.onload = () => {
+          img.onload = function() {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // Resize if too large
             let { width, height } = img;
-            const maxSize = 800;
+            const maxSize = 800; // Smaller for gallery
             if (width > maxSize || height > maxSize) {
               if (width > height) {
                 height = (height * maxSize) / width;
@@ -464,10 +788,293 @@
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
             
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            activeEditorInstance.exec('insertImage', compressedDataUrl);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            galleryImages.push({
+              src: compressedDataUrl,
+              width,
+              height,
+              size: 25, // Default gallery size
+              align: 'left',
+              display: 'gallery',
+              alt: `Gallery Image ${galleryImages.length + 1}`
+            });
+            
+            processed++;
+            if (processed === validFiles.length) {
+              updateGalleryPreview();
+            }
           };
           img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    
+    function updateGalleryPreview() {
+      if (galleryImages.length === 0) {
+        $('#galleryPreviewSection').hide();
+        return;
+      }
+      
+      let galleryHtml = '';
+      galleryImages.forEach((img, index) => {
+        galleryHtml += `
+          <div class="gallery-preview-item">
+            <img src="${img.src}" alt="${img.alt}">
+            <button class="remove-gallery-item" data-index="${index}">×</button>
+          </div>
+        `;
+      });
+      
+      $('#galleryImagesContainer').html(galleryHtml);
+      $('#galleryPreviewSection').show();
+      $('#imagePreviewSection').hide();
+      
+      // Remove item functionality
+      $('.remove-gallery-item').on('click', function() {
+        const index = $(this).data('index');
+        galleryImages.splice(index, 1);
+        updateGalleryPreview();
+      });
+    }
+    
+    function showImagePreview(src, width, height) {
+      currentImageData = { src, width, height, size: 50, align: 'left', display: 'inline', alt: 'Image' };
+      window.currentImageData = currentImageData;
+      $('#imagePreview').attr('src', src);
+      $('#imagePreviewSection').show();
+      $('#galleryPreviewSection').hide();
+      updateImagePreview();
+    }
+    
+    function updateImagePreview() {
+      if (!currentImageData && !window.currentImageData) return;
+      
+      const imageData = currentImageData || window.currentImageData;
+      const size = $('#customSize').val() || $('.size-btn.active').data('size') || 50;
+      const align = $('.align-btn.active').data('align') || 'left';
+      const display = $('.display-btn.active').data('display') || 'inline';
+      
+      let style = `width: ${size}%; height: auto;`;
+      
+      if (display === 'block') {
+        style += ` display: block; margin: 10px auto;`;
+      } else if (display === 'gallery') {
+        style += ` display: inline-block; margin: 5px;`;
+      }
+      
+      if (align === 'center') {
+        style += ` margin-left: auto; margin-right: auto; display: block;`;
+      } else if (align === 'right') {
+        style += ` float: right; margin-left: 10px;`;
+      } else if (align === 'left') {
+        style += ` float: left; margin-right: 10px;`;
+      }
+      
+      $('#imagePreview').attr('style', style);
+      
+      imageData.size = size;
+      imageData.align = align;
+      imageData.display = display;
+      imageData.alt = $('#imageAltText').val() || 'Image';
+      
+      // Update both references
+      currentImageData = imageData;
+      window.currentImageData = imageData;
+    }
+  }
+  
+  function insertImage(editorInstance, imageData) {
+    let style = `width: ${imageData.size}%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);`;
+    
+    if (imageData.display === 'block') {
+      style += ` display: block; margin: 15px auto;`;
+    } else if (imageData.align === 'center') {
+      style += ` display: block; margin: 15px auto;`;
+    } else if (imageData.align === 'right') {
+      style += ` float: right; margin: 10px 0 10px 15px;`;
+    } else {
+      style += ` float: left; margin: 10px 15px 10px 0;`;
+    }
+    
+    const imgHtml = `<img src="${imageData.src}" alt="${imageData.alt || 'Image'}" style="${style}" class="editor-image">`;
+    
+    // Focus editor and insert
+    editorInstance.$contentArea.focus();
+    editorInstance.exec('insertHTML', imgHtml + '<p><br></p>');
+    
+    console.log('Image inserted:', imgHtml);
+  }
+  
+  function insertGallery(editorInstance, images) {
+    let galleryHtml = '<div class="image-gallery" style="display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0;">';
+    
+    images.forEach(img => {
+      const size = Math.min(100 / images.length, 25); // Auto-size based on count
+      galleryHtml += `<img src="${img.src}" alt="${img.alt}" style="width: ${size}%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" class="gallery-image">`;
+    });
+    
+    galleryHtml += '</div><p><br></p>';
+    editorInstance.exec('insertHTML', galleryHtml);
+  }
+  
+  // Table builder function
+  function showTableBuilder(editorInstance) {
+    const tableBuilderHtml = `
+      <div class="ranjit-modal-content table-builder-modal">
+        <span class="ranjit-modal-close">&times;</span>
+        <h3>📊 Create Table</h3>
+        
+        <div class="table-builder-section">
+          <h4>🎯 Quick Select (Hover to Preview)</h4>
+          <div class="table-grid-selector" id="tableGridSelector">
+            <div class="grid-preview" id="gridPreview"></div>
+            <div class="grid-info" id="gridInfo">1 x 1</div>
+          </div>
+        </div>
+        
+        <div class="table-builder-section">
+          <h4>⚙️ Custom Size</h4>
+          <div class="custom-inputs">
+            <label>Rows: <input type="number" id="customRows" value="3" min="1" max="20"></label>
+            <label>Columns: <input type="number" id="customCols" value="3" min="1" max="10"></label>
+            <button class="table-btn" id="createCustomTable">Create Custom Table</button>
+          </div>
+        </div>
+        
+        <div class="table-builder-section">
+          <h4>🎨 Table Templates</h4>
+          <div class="table-templates">
+            <button class="template-btn" data-template="simple">📋 Simple Table</button>
+            <button class="template-btn" data-template="header">📊 With Header</button>
+            <button class="template-btn" data-template="striped">🦓 Striped Rows</button>
+            <button class="template-btn" data-template="bordered">🔲 Bordered</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    $('#ranjitTableModal').html(tableBuilderHtml).css('display', 'flex');
+    
+    // Grid selector functionality
+    const maxRows = 8, maxCols = 8;
+    let gridHtml = '';
+    for (let r = 0; r < maxRows; r++) {
+      for (let c = 0; c < maxCols; c++) {
+        gridHtml += `<div class="grid-cell" data-row="${r+1}" data-col="${c+1}"></div>`;
+      }
+    }
+    $('#tableGridSelector .grid-preview').html(gridHtml);
+    
+    // Grid hover effects
+    $('.grid-cell').on('mouseenter', function() {
+      const row = $(this).data('row');
+      const col = $(this).data('col');
+      
+      $('.grid-cell').removeClass('active');
+      for (let r = 1; r <= row; r++) {
+        for (let c = 1; c <= col; c++) {
+          $(`.grid-cell[data-row="${r}"][data-col="${c}"]`).addClass('active');
+        }
+      }
+      $('#gridInfo').text(`${row} x ${col}`);
+    });
+    
+    // Grid click to create table
+    $('.grid-cell').on('click', function() {
+      const rows = $(this).data('row');
+      const cols = $(this).data('col');
+      createTable(editorInstance, rows, cols, 'simple');
+      $('#ranjitTableModal').hide();
+    });
+    
+    // Custom table creation
+    $('#createCustomTable').on('click', function() {
+      const rows = parseInt($('#customRows').val());
+      const cols = parseInt($('#customCols').val());
+      if (rows > 0 && cols > 0) {
+        createTable(editorInstance, rows, cols, 'simple');
+        $('#ranjitTableModal').hide();
+      }
+    });
+    
+    // Template buttons
+    $('.template-btn').on('click', function() {
+      const template = $(this).data('template');
+      const rows = parseInt($('#customRows').val()) || 3;
+      const cols = parseInt($('#customCols').val()) || 3;
+      createTable(editorInstance, rows, cols, template);
+      $('#ranjitTableModal').hide();
+    });
+  }
+  
+  // Create table with different styles
+  function createTable(editorInstance, rows, cols, template) {
+    let tableStyle = '';
+    let headerRow = false;
+    
+    switch(template) {
+      case 'simple':
+        tableStyle = 'border-collapse: collapse; width: 100%; margin: 15px 0;';
+        break;
+      case 'header':
+        tableStyle = 'border-collapse: collapse; width: 100%; margin: 15px 0;';
+        headerRow = true;
+        break;
+      case 'striped':
+        tableStyle = 'border-collapse: collapse; width: 100%; margin: 15px 0;';
+        break;
+      case 'bordered':
+        tableStyle = 'border-collapse: collapse; width: 100%; margin: 15px 0; border: 2px solid #667eea;';
+        break;
+    }
+    
+    let table = `<table style="${tableStyle}"><tbody>`;
+    
+    for (let r = 0; r < rows; r++) {
+      table += '<tr>';
+      for (let c = 0; c < cols; c++) {
+        let cellStyle = 'padding: 12px; border: 1px solid #ddd; text-align: left;';
+        let cellContent = '&nbsp;';
+        
+        if (headerRow && r === 0) {
+          cellStyle += ' background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-weight: bold;';
+          cellContent = `Header ${c + 1}`;
+          table += `<th style="${cellStyle}">${cellContent}</th>`;
+        } else {
+          if (template === 'striped' && r % 2 === 1) {
+            cellStyle += ' background: #f8f9fa;';
+          }
+          if (template === 'bordered') {
+            cellStyle += ' border: 1px solid #667eea;';
+          }
+          table += `<td style="${cellStyle}">${cellContent}</td>`;
+        }
+      }
+      table += '</tr>';
+    }
+    
+    table += '</tbody></table><p><br></p>';
+    editorInstance.exec('insertHTML', table);
+  }
+
+  // Shared event handlers
+  $(function () {
+    // Ensure required elements exist
+    ensureRequiredElements();
+    // Legacy image upload (fallback)
+    $("#ranjitImageUpload").on("change", function () {
+      if (this.files && this.files[0] && activeEditorInstance) {
+        const file = this.files[0];
+        if (file.size > 2 * 1024 * 1024) {
+          alert('Image size should be less than 2MB');
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imgHtml = `<img src="${e.target.result}" alt="Image" style="width: 50%; height: auto; margin: 10px 0;" class="editor-image">`;
+          activeEditorInstance.exec('insertHTML', imgHtml);
         };
         reader.readAsDataURL(file);
         $(this).val('');
@@ -483,12 +1090,19 @@
       }
     });
     
+    // Table grid reset on mouse leave
+    $(document).on('mouseleave', '.table-grid-selector', function() {
+      $('.grid-cell').removeClass('active');
+      $('#gridInfo').text('Hover to select');
+    });
+    
     // Modal events
     $(document)
       .on("click", ".ranjit-modal-overlay, .ranjit-modal-close", function () {
         $(".ranjit-modal-overlay").hide();
       })
-      .on("click", ".ranjit-modal-content", (e) => e.stopPropagation());
+      .on("click", ".ranjit-modal-content", (e) => e.stopPropagation())
+      .on("click", ".table-builder-modal", (e) => e.stopPropagation());
       
     // Prevent form submission on Enter in editor
     $(document).on('keydown', '.ranjit-editor-content', function(e) {

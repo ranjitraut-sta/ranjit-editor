@@ -2,7 +2,8 @@
   box-sizing: border-box;
 }
 
-body {
+/* Remove global body styles - only apply to demo page */
+.ranjit-demo-page {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #333;
@@ -12,12 +13,12 @@ body {
   transition: all 0.3s ease;
 }
 
-body.dark-mode {
+.ranjit-demo-page.dark-mode {
   background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
   color: #ecf0f1;
 }
 
-.page-container {
+.ranjit-demo-page .page-container {
   max-width: 1200px;
   margin: 0 auto;
   background: rgba(255, 255, 255, 0.95);
@@ -28,12 +29,12 @@ body.dark-mode {
   transition: all 0.3s ease;
 }
 
-body.dark-mode .page-container {
+.ranjit-demo-page.dark-mode .page-container {
   background: rgba(44, 62, 80, 0.95);
   color: #ecf0f1;
 }
 
-.header-controls {
+.ranjit-demo-page .header-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -42,7 +43,7 @@ body.dark-mode .page-container {
   gap: 15px;
 }
 
-h1 {
+.ranjit-demo-page h1 {
   margin: 0;
   background: linear-gradient(45deg, #667eea, #764ba2);
   -webkit-background-clip: text;
@@ -52,14 +53,14 @@ h1 {
   font-weight: 700;
 }
 
-body.dark-mode h1 {
+.ranjit-demo-page.dark-mode h1 {
   background: linear-gradient(45deg, #3498db, #9b59b6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.dark-mode-btn {
+.ranjit-demo-page .dark-mode-btn {
   background: linear-gradient(45deg, #667eea, #764ba2);
   color: white;
   border: none;
@@ -71,12 +72,12 @@ body.dark-mode h1 {
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
-.dark-mode-btn:hover {
+.ranjit-demo-page .dark-mode-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
-body.dark-mode .dark-mode-btn {
+.ranjit-demo-page.dark-mode .dark-mode-btn {
   background: linear-gradient(45deg, #3498db, #9b59b6);
 }
 
@@ -1895,21 +1896,21 @@ body.dark-mode .ranjit-editor-content .image-gallery {
     font-size: 2.5rem;
   }
   
-  body {
+  .ranjit-demo-page {
     padding: 10px;
   }
   
-  .page-container {
+  .ranjit-demo-page .page-container {
     padding: 20px;
     border-radius: 15px;
   }
   
-  .header-controls {
+  .ranjit-demo-page .header-controls {
     flex-direction: column;
     text-align: center;
   }
   
-  h1 {
+  .ranjit-demo-page h1 {
     font-size: 2rem;
   }
   

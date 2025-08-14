@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranjit Editor - Advanced jQuery Rich Text Editor</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Ranjit Editor - A powerful, feature-rich jQuery plugin that transforms textareas into advanced rich text editors with dark mode, auto-save, emoji picker and more.">
+    <meta name="keywords" content="jquery, plugin, rich text editor, wysiwyg, text editor, javascript, dark mode, emoji picker">
+    <meta name="author" content="Ranjit Editor Team">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Ranjit Editor - Advanced jQuery Rich Text Editor">
+    <meta property="og:description" content="Transform your textareas into powerful rich text editors with professional features.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ranjitraut-sta.github.io/ranjit-editor/">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
+    
+    <!-- Dependencies -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Ranjit Editor -->
+    <link rel="stylesheet" href="assets/main.css">
+    
+    <style>
+        /* Landing Page Styles */
+        .hero-section {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-bottom: 0;
+        }
+        
+        body.dark-mode .hero-section {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+        
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .hero-subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .hero-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 15px 30px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .hero-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .demo-section {
+            margin-bottom: 50px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        body.dark-mode .demo-section {
+            background: rgba(44, 62, 80, 0.95);
+        }
+        
+        .section-title {
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+        }
+        
+        body.dark-mode .section-title {
+            background: linear-gradient(45deg, #3498db, #9b59b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 40px 0;
+        }
+        
+        .feature-card {
+            padding: 25px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.2);
+        }
+        
+        body.dark-mode .feature-card {
+            background: linear-gradient(135deg, #4a5568, #2d3748);
+            border-left-color: #3498db;
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        body.dark-mode .feature-icon {
+            color: #3498db;
+        }
+        
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+        
+        body.dark-mode .feature-title {
+            color: #e2e8f0;
+        }
+        
+        .feature-desc {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        body.dark-mode .feature-desc {
+            color: #a0aec0;
+        }
+        
+        .try-now-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 60px 40px;
+            border-radius: 20px;
+            margin: 50px 0;
+        }
+        
+        body.dark-mode .try-now-section {
+            background: linear-gradient(135deg, #3498db 0%, #9b59b6 100%);
+        }
+        
+        .github-link {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 10px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .github-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            border-top: 1px solid #e1e8ed;
+            margin-top: 50px;
+        }
+        
+        body.dark-mode .footer {
+            color: #a0aec0;
+            border-top-color: #4a5568;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .demo-section {
+                padding: 25px;
+            }
+            
+            .section-title {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <h1 class="hero-title">📝 Ranjit Editor</h1>
+        <p class="hero-subtitle">Advanced jQuery Rich Text Editor Plugin</p>
+        <p style="font-size: 1.1rem; margin-bottom: 40px;">Transform your textareas into powerful rich text editors with professional features</p>
+        
+        <div class="hero-buttons">
+            <a href="#demo" class="hero-btn">
+                <i class="fas fa-play"></i> Try Live Demo
+            </a>
+            <a href="https://github.com/ranjitraut-sta/ranjit-editor" class="hero-btn" target="_blank">
+                <i class="fab fa-github"></i> View on GitHub
+            </a>
+            <button id="darkModeToggle" class="hero-btn">
+                <i class="fas fa-moon"></i> Dark Mode
+            </button>
+        </div>
+    </div>
+
+    <div class="demo-container">
+        <!-- Features Section -->
+        <div class="demo-section">
+            <h2 class="section-title">✨ Key Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-undo"></i></div>
+                    <h3 class="feature-title">Undo/Redo System</h3>
+                    <p class="feature-desc">Full history management with 50 levels of undo/redo functionality.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-save"></i></div>
+                    <h3 class="feature-title">Auto-save</h3>
+                    <p class="feature-desc">Automatic content saving every 5 seconds with visual feedback.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-moon"></i></div>
+                    <h3 class="feature-title">Dark Mode</h3>
+                    <p class="feature-desc">Beautiful dark theme with localStorage persistence.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-expand"></i></div>
+                    <h3 class="feature-title">Fullscreen Mode</h3>
+                    <p class="feature-desc">Distraction-free editing experience in fullscreen mode.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-smile"></i></div>
+                    <h3 class="feature-title">Emoji Picker</h3>
+                    <p class="feature-desc">80+ beautiful emojis with easy grid selection.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-mobile-alt"></i></div>
+                    <h3 class="feature-title">Mobile Ready</h3>
+                    <p class="feature-desc">Fully responsive design optimized for all devices.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Demo Section -->
+        <div class="demo-section" id="demo">
+            <h2 class="section-title">🚀 Live Demo</h2>
+            <p style="text-align: center; margin-bottom: 30px; font-size: 1.1rem; color: #666;">
+                Try the editor below! All features are enabled and ready to use.
+            </p>
+            
+            <form id="demoForm" onsubmit="alert('Content saved! Check console for data.'); console.log('Content:', $(this).serialize()); return false;">
+                <label for="demoEditor" style="font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; display: block;">
+                    📝 Start Writing Your Content:
+                </label>
+                <textarea id="demoEditor" name="content" rows="12">
+                    <h2>🎉 Welcome to Ranjit Editor!</h2>
+                    <p>This is a <strong>powerful</strong> and <em>feature-rich</em> rich text editor built with jQuery.</p>
+                    
+                    <h3>✨ Try These Features:</h3>
+                    <ul>
+                        <li><strong>Formatting:</strong> Use the toolbar buttons or keyboard shortcuts (Ctrl+B, Ctrl+I, etc.)</li>
+                        <li><strong>Images:</strong> Drag and drop images directly into the editor</li>
+                        <li><strong>Emojis:</strong> Click the emoji button to add emojis 😊</li>
+                        <li><strong>Tables:</strong> Create professional tables with the table button</li>
+                        <li><strong>Fullscreen:</strong> Click the expand button for distraction-free editing</li>
+                        <li><strong>Dark Mode:</strong> Toggle dark mode using the button above</li>
+                    </ul>
+                    
+                    <blockquote>
+                        "Ranjit Editor makes rich text editing simple and powerful!" - Happy User
+                    </blockquote>
+                    
+                    <p>🚀 <strong>Ready to use in your projects?</strong> Check out the GitHub repository for installation instructions!</p>
+                </textarea>
+                
+                <div style="text-align: center; margin-top: 30px;">
+                    <button type="submit" style="background: linear-gradient(45deg, #667eea, #764ba2); color: white; border: none; padding: 15px 30px; border-radius: 25px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        💾 Save Content
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Installation Section -->
+        <div class="demo-section">
+            <h2 class="section-title">⚡ Quick Installation</h2>
+            <div style="background: #2d3748; color: #e2e8f0; padding: 25px; border-radius: 10px; margin: 20px 0; overflow-x: auto;">
+                <pre style="margin: 0; font-family: 'Fira Code', 'Courier New', monospace;"><code>&lt;!-- Include Dependencies --&gt;
+&lt;link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"&gt;
+&lt;script src="https://code.jquery.com/jquery-3.7.1.min.js"&gt;&lt;/script&gt;
+
+&lt;!-- Include Ranjit Editor --&gt;
+&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ranjitraut-sta/ranjit-editor@main/assets/main.css"&gt;
+&lt;script src="https://cdn.jsdelivr.net/gh/ranjitraut-sta/ranjit-editor@main/assets/main.js"&gt;&lt;/script&gt;
+
+&lt;!-- Initialize --&gt;
+&lt;script&gt;
+$('#myEditor').ranjitEditor({
+    autosave: true,
+    wordCount: true,
+    emoji: true,
+    fullscreen: true
+});
+&lt;/script&gt;</code></pre>
+            </div>
+        </div>
+
+        <!-- GitHub Section -->
+        <div class="try-now-section">
+            <h2 style="font-size: 2.5rem; margin-bottom: 20px;">🚀 Ready to Use?</h2>
+            <p style="font-size: 1.2rem; margin-bottom: 30px;">
+                Ranjit Editor is open source and ready for production use!
+            </p>
+            <div>
+                <a href="https://github.com/ranjitraut-sta/ranjit-editor" class="github-link" target="_blank">
+                    <i class="fab fa-github"></i> View on GitHub
+                </a>
+                <a href="https://github.com/ranjitraut-sta/ranjit-editor/archive/refs/heads/main.zip" class="github-link">
+                    <i class="fas fa-download"></i> Download ZIP
+                </a>
+                <a href="demo.html" class="github-link">
+                    <i class="fas fa-desktop"></i> Full Demo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Made with ❤️ by <strong>Ranjit Editor Team</strong></p>
+        <p>Open Source • MIT License • <a href="https://github.com/ranjitraut-sta/ranjit-editor" style="color: #667eea;">GitHub</a></p>
+    </div>
+
+    <!-- Required Hidden Elements -->
+    <input type="file" id="ranjitImageUpload" accept="image/*" style="display: none;">
+    <div id="ranjitHelpModal" class="ranjit-modal-overlay"></div>
+    <div id="ranjitEmojiModal" class="ranjit-modal-overlay"></div>
+
+    <!-- Scripts -->
+    <script src="assets/main.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Initialize demo editor
+            $('#demoEditor').ranjitEditor({
+                autosave: true,
+                wordCount: true,
+                darkMode: false,
+                fullscreen: true,
+                emoji: true,
+                autosaveInterval: 5000
+            });
+            
+            // Dark mode toggle
+            $('#darkModeToggle').click(function() {
+                $('body').toggleClass('dark-mode');
+                const isDark = $('body').hasClass('dark-mode');
+                $(this).html(isDark ? '<i class="fas fa-sun"></i> Light Mode' : '<i class="fas fa-moon"></i> Dark Mode');
+                localStorage.setItem('darkMode', isDark);
+            });
+            
+            // Load saved dark mode preference
+            if (localStorage.getItem('darkMode') === 'true') {
+                $('body').addClass('dark-mode');
+                $('#darkModeToggle').html('<i class="fas fa-sun"></i> Light Mode');
+            }
+            
+            // Smooth scrolling for anchor links
+            $('a[href^="#"]').click(function(e) {
+                e.preventDefault();
+                const target = $($(this).attr('href'));
+                if (target.length) {
+                    $('html, body').animate({
+                        scrollTop: target.offset().top - 100
+                    }, 800);
+                }
+            });
+            
+            console.log('🚀 Ranjit Editor Landing Page Loaded!');
+            console.log('Repository: https://github.com/ranjitraut-sta/ranjit-editor');
+        });
+    </script>
+</body>
+</html>

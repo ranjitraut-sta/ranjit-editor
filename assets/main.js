@@ -67,8 +67,14 @@
             <button type="button" class="tool-button" data-command="superscript" title="Superscript"><i class="fas fa-superscript"></i></button>
           </div>
           <div class="tool-group">
-            <div class="tool-color-picker" title="Text Color"><i class="fas fa-font"></i><input type="color" data-command="foreColor" value="#000000"></div>
-            <div class="tool-color-picker" title="Background Color"><i class="fas fa-fill-drip"></i><input type="color" data-command="hiliteColor" value="#ffff00"></div>
+            <div class="tool-color-picker" title="Text Color">
+              <i class="fas fa-font"></i>
+              <input type="color" class="color-input" data-command="foreColor" value="#000000">
+            </div>
+            <div class="tool-color-picker" title="Background Color">
+              <i class="fas fa-fill-drip"></i>
+              <input type="color" class="color-input" data-command="hiliteColor" value="#ffff00">
+            </div>
           </div>
           <div class="tool-group">
             <button type="button" class="tool-button" data-command="justifyLeft" title="Align Left"><i class="fas fa-align-left"></i></button>
@@ -110,6 +116,9 @@
             <span class="word-count">Words: 0</span>
             <span class="char-count">Characters: 0</span>
             <span class="autosave-status">Ready</span>
+          </div>
+          <div class="editor-copyright">
+            <span>© ${new Date().getFullYear()} by <a href="https://github.com/ranjitraut-sta" target="_blank">Ranjit Raut</a></span>
           </div>
         </div>
         <div class="ranjit-editor-code-wrapper">
@@ -360,12 +369,27 @@
       });
       
       // Color picker events
-      $editor.find('input[type="color"]').on('change', function() {
+      $editor.find('.color-input').on('change input', function() {
         activeEditorInstance = instance;
         const command = $(this).data('command');
         const value = $(this).val();
-        const selection = instance.saveSelection();
-        handleCommand(command, value, selection);
+        $contentArea.focus();
+        
+        // Apply color immediately
+        if (command === 'foreColor') {
+          document.execCommand('styleWithCSS', false, true);
+          document.execCommand('foreColor', false, value);
+        } else if (command === 'hiliteColor' || command === 'backColor') {
+          document.execCommand('styleWithCSS', false, true);
+          document.execCommand('hiliteColor', false, value);
+        }
+        
+        instance.updateCounts();
+      });
+      
+      // Color picker click to focus editor first
+      $editor.find('.tool-color-picker').on('click', function() {
+        $contentArea.focus();
       });
       
       function handleCommand(command, value, selection) {
@@ -475,10 +499,17 @@
             case "formatBlock":
             case "fontName":
             case "fontSize":
+              if (value) {
+                instance.restoreSelection(selection);
+                instance.exec(command, value);
+              }
+              break;
+              
             case "foreColor":
             case "hiliteColor":
               if (value) {
                 instance.restoreSelection(selection);
+                document.execCommand('styleWithCSS', false, true);
                 instance.exec(command, value);
               }
               break;
@@ -1216,19 +1247,22 @@
   }
   
   function insertImage(editorInstance, imageData) {
-    let style = `width: ${imageData.size}%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);`;
+    let containerStyle = 'margin: 15px 0; clear: both;';
+    let imgStyle = `width: ${imageData.size}%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: pointer; display: block;`;
     
-    if (imageData.display === 'block') {
-      style += ` display: block; margin: 15px auto;`;
-    } else if (imageData.align === 'center') {
-      style += ` display: block; margin: 15px auto;`;
+    if (imageData.align === 'center') {
+      containerStyle += ' text-align: center;';
+      imgStyle += ' margin: 0 auto;';
     } else if (imageData.align === 'right') {
-      style += ` float: right; margin: 10px 0 10px 15px;`;
+      containerStyle += ' text-align: right;';
+      imgStyle += ' margin-left: auto;';
     } else {
-      style += ` float: left; margin: 10px 15px 10px 0;`;
+      containerStyle += ' text-align: left;';
+      imgStyle += ' margin-right: auto;';
     }
     
-    const imgHtml = `<img src="${imageData.src}" alt="${imageData.alt || 'Image'}" style="${style}" class="editor-image">`;
+    const imgId = 'img-' + Math.random().toString(36).substr(2, 9);
+    const imgHtml = `<div class="image-wrapper" style="${containerStyle}"><img id="${imgId}" src="${imageData.src}" alt="${imageData.alt || 'Image'}" style="${imgStyle}" class="editor-image editable-media" data-type="image"></div>`;
     
     // Focus editor and insert
     editorInstance.$contentArea.focus();
@@ -1608,5 +1642,233 @@
         $(this).closest('form').submit();
       }
     });
+    
+    // Media editing functionality
+    $(document).on('click', '.editable-media', function(e) {
+      e.preventDefault();
+      const $media = $(this);
+      const type = $media.data('type');
+      
+      if (type === 'image') {
+        editImage($media);
+      } else if (type === 'video') {
+        editVideo($media);
+      }
+    });
   });
+  
+  // Edit image function
+  function editImage($img) {
+    const currentSrc = $img.attr('src');
+    const currentAlt = $img.attr('alt') || 'Image';
+    const currentStyle = $img.attr('style') || '';
+    
+    const widthMatch = currentStyle.match(/width:\s*(\d+)%/);
+    const currentSize = widthMatch ? widthMatch[1] : '50';
+    
+    let currentAlign = 'left';
+    if (currentStyle.includes('float: right')) currentAlign = 'right';
+    else if (currentStyle.includes('margin: 15px auto') || currentStyle.includes('margin:15px auto')) currentAlign = 'center';
+    
+    const editHtml = `
+      <div class="ranjit-modal-content image-edit-modal">
+        <span class="ranjit-modal-close">&times;</span>
+        <h3>🖼️ Edit Image</h3>
+        
+        <div class="image-preview-container">
+          <img id="editImagePreview" src="${currentSrc}" alt="${currentAlt}" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+        </div>
+        
+        <div class="image-controls">
+          <div class="control-group">
+            <label>📏 Size:</label>
+            <div class="size-buttons">
+              <button class="size-btn ${currentSize == '25' ? 'active' : ''}" data-size="25">25%</button>
+              <button class="size-btn ${currentSize == '50' ? 'active' : ''}" data-size="50">50%</button>
+              <button class="size-btn ${currentSize == '75' ? 'active' : ''}" data-size="75">75%</button>
+              <button class="size-btn ${currentSize == '100' ? 'active' : ''}" data-size="100">100%</button>
+            </div>
+          </div>
+          
+          <div class="control-group">
+            <label>📍 Alignment:</label>
+            <div class="align-buttons">
+              <button class="align-btn ${currentAlign == 'left' ? 'active' : ''}" data-align="left"><i class="fas fa-align-left"></i> Left</button>
+              <button class="align-btn ${currentAlign == 'center' ? 'active' : ''}" data-align="center"><i class="fas fa-align-center"></i> Center</button>
+              <button class="align-btn ${currentAlign == 'right' ? 'active' : ''}" data-align="right"><i class="fas fa-align-right"></i> Right</button>
+            </div>
+          </div>
+          
+          <div class="control-group">
+            <label>✏️ Alt Text:</label>
+            <input type="text" id="editImageAlt" value="${currentAlt}" placeholder="Describe the image...">
+          </div>
+          
+          <div class="edit-buttons">
+            <button class="image-btn primary" id="updateImageBtn">✨ Update Image</button>
+            <button class="image-btn danger" id="deleteImageBtn">🗑️ Delete Image</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    $('#ranjitImageModal').html(editHtml).css('display', 'flex');
+    
+    $('.size-btn').on('click', function() {
+      $('.size-btn').removeClass('active');
+      $(this).addClass('active');
+    });
+    
+    $('.align-btn').on('click', function() {
+      $('.align-btn').removeClass('active');
+      $(this).addClass('active');
+    });
+    
+    $('#updateImageBtn').on('click', function() {
+      const size = $('.size-btn.active').data('size');
+      const align = $('.align-btn.active').data('align');
+      const alt = $('#editImageAlt').val();
+      
+      let containerStyle = 'margin: 15px 0; clear: both;';
+      let imgStyle = `width: ${size}%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: pointer; display: block;`;
+      
+      if (align === 'center') {
+        containerStyle += ' text-align: center;';
+        imgStyle += ' margin: 0 auto;';
+      } else if (align === 'right') {
+        containerStyle += ' text-align: right;';
+        imgStyle += ' margin-left: auto;';
+      } else {
+        containerStyle += ' text-align: left;';
+        imgStyle += ' margin-right: auto;';
+      }
+      
+      const $wrapper = $img.closest('.image-wrapper');
+      if ($wrapper.length) {
+        $wrapper.attr('style', containerStyle);
+        $img.attr('style', imgStyle).attr('alt', alt);
+      } else {
+        // Wrap existing image if not wrapped
+        $img.wrap(`<div class="image-wrapper" style="${containerStyle}"></div>`);
+        $img.attr('style', imgStyle).attr('alt', alt);
+      }
+      
+      $('#ranjitImageModal').hide();
+    });
+    
+    $('#deleteImageBtn').on('click', function() {
+      if (confirm('Delete this image?')) {
+        const $wrapper = $img.closest('.image-wrapper');
+        if ($wrapper.length) {
+          $wrapper.remove();
+        } else {
+          $img.remove();
+        }
+        $('#ranjitImageModal').hide();
+      }
+    });
+  }
+  
+  // Edit video function
+  function editVideo($video) {
+    const currentStyle = $video.attr('style') || '';
+    const $iframe = $video.find('iframe');
+    const $videoEl = $video.find('video');
+    
+    let currentSize = '560';
+    if ($iframe.length) {
+      const width = $iframe.attr('width');
+      if (width && width.includes('px')) {
+        currentSize = width.replace('px', '');
+      }
+    } else if ($videoEl.length) {
+      const width = $videoEl.attr('width');
+      if (width && width.includes('px')) {
+        currentSize = width.replace('px', '');
+      }
+    }
+    
+    let currentAlign = 'center';
+    if (currentStyle.includes('text-align: left')) currentAlign = 'left';
+    else if (currentStyle.includes('text-align: right')) currentAlign = 'right';
+    
+    const editHtml = `
+      <div class="ranjit-modal-content video-edit-modal">
+        <span class="ranjit-modal-close">&times;</span>
+        <h3>🎥 Edit Video</h3>
+        
+        <div class="video-preview-container">
+          ${$video.html()}
+        </div>
+        
+        <div class="video-controls">
+          <div class="control-group">
+            <label>📏 Size:</label>
+            <div class="size-buttons">
+              <button class="size-btn ${currentSize == '400' ? 'active' : ''}" data-size="400">Small</button>
+              <button class="size-btn ${currentSize == '560' ? 'active' : ''}" data-size="560">Medium</button>
+              <button class="size-btn ${currentSize == '800' ? 'active' : ''}" data-size="800">Large</button>
+            </div>
+          </div>
+          
+          <div class="control-group">
+            <label>📍 Alignment:</label>
+            <div class="align-buttons">
+              <button class="align-btn ${currentAlign == 'left' ? 'active' : ''}" data-align="left"><i class="fas fa-align-left"></i> Left</button>
+              <button class="align-btn ${currentAlign == 'center' ? 'active' : ''}" data-align="center"><i class="fas fa-align-center"></i> Center</button>
+              <button class="align-btn ${currentAlign == 'right' ? 'active' : ''}" data-align="right"><i class="fas fa-align-right"></i> Right</button>
+            </div>
+          </div>
+          
+          <div class="edit-buttons">
+            <button class="video-btn primary" id="updateVideoBtn">✨ Update Video</button>
+            <button class="video-btn danger" id="deleteVideoBtn">🗑️ Delete Video</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    $('#ranjitVideoModal').html(editHtml).css('display', 'flex');
+    
+    $('.size-btn').on('click', function() {
+      $('.size-btn').removeClass('active');
+      $(this).addClass('active');
+    });
+    
+    $('.align-btn').on('click', function() {
+      $('.align-btn').removeClass('active');
+      $(this).addClass('active');
+    });
+    
+    $('#updateVideoBtn').on('click', function() {
+      const size = $('.size-btn.active').data('size');
+      const align = $('.align-btn.active').data('align');
+      
+      let containerStyle = 'margin: 20px 0; cursor: pointer;';
+      
+      if (align === 'center') {
+        containerStyle += ' text-align: center;';
+      } else if (align === 'right') {
+        containerStyle += ' text-align: right;';
+      } else {
+        containerStyle += ' text-align: left;';
+      }
+      
+      $video.attr('style', containerStyle);
+      $video.find('iframe, video').css({
+        'width': size + 'px',
+        'height': Math.round(size * 0.5625) + 'px'
+      });
+      
+      $('#ranjitVideoModal').hide();
+    });
+    
+    $('#deleteVideoBtn').on('click', function() {
+      if (confirm('Delete this video?')) {
+        $video.remove();
+        $('#ranjitVideoModal').hide();
+      }
+    });
+  }
+
 })(jQuery);

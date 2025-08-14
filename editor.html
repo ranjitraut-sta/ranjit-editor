@@ -55,9 +55,9 @@
     </div>
 
     <!-- Hidden elements for advanced features -->
-    <input type="file" id="ranjitImageUpload" accept="image/*" style="display: none;">
+    <!-- <input type="file" id="ranjitImageUpload" accept="image/*" style="display: none;">
     <div id="ranjitHelpModal" class="ranjit-modal-overlay"></div>
-    <div id="ranjitEmojiModal" class="ranjit-modal-overlay"></div>
+    <div id="ranjitEmojiModal" class="ranjit-modal-overlay"></div> -->
     
     <script src="assets/main.js"></script>
     <script>
@@ -70,20 +70,7 @@
           fullscreen: true,
           emoji: true
         });
-        
-        // Dark mode toggle
-        $('#darkModeToggle').click(function() {
-          $('body').toggleClass('dark-mode');
-          const isDark = $('body').hasClass('dark-mode');
-          $(this).html(isDark ? '<i class="fas fa-sun"></i> Light Mode' : '<i class="fas fa-moon"></i> Dark Mode');
-          localStorage.setItem('darkMode', isDark);
-        });
-        
-        // Load saved dark mode preference
-        if (localStorage.getItem('darkMode') === 'true') {
-          $('body').addClass('dark-mode');
-          $('#darkModeToggle').html('<i class="fas fa-sun"></i> Light Mode');
-        }
+
       });
     </script>
   </body>

@@ -86,6 +86,7 @@
             <button type="button" class="tool-button" data-command="createLink" title="Insert Link"><i class="fas fa-link"></i></button>
             <button type="button" class="tool-button" data-command="unlink" title="Remove Link"><i class="fas fa-unlink"></i></button>
             <button type="button" class="tool-button" data-command="insertImage" title="Insert Image"><i class="fas fa-image"></i></button>
+            <button type="button" class="tool-button" data-command="insertVideo" title="Insert Video"><i class="fas fa-video"></i></button>
             <button type="button" class="tool-button" data-command="insertTable" title="Insert Table"><i class="fas fa-table"></i></button>
           </div>
           <div class="tool-group">
@@ -365,6 +366,11 @@
             break;
           }
           
+          case "insertVideo": {
+            showVideoBuilder(instance);
+            break;
+          }
+          
           case "insertTable": {
             instance.restoreSelection(selection);
             showTableBuilder(instance);
@@ -471,6 +477,300 @@
     if (!$('#ranjitImageModal').length) {
       $('body').append('<div id="ranjitImageModal" class="ranjit-modal-overlay"></div>');
     }
+    if (!$('#ranjitVideoModal').length) {
+      $('body').append('<div id="ranjitVideoModal" class="ranjit-modal-overlay"></div>');
+    }
+  }
+  
+  // Video builder function
+  function showVideoBuilder(editorInstance) {
+    const videoBuilderHtml = `
+      <div class="ranjit-modal-content video-builder-modal">
+        <span class="ranjit-modal-close">&times;</span>
+        <h3>🎥 Insert Video</h3>
+        
+        <div class="video-builder-section">
+          <h4>🔗 Video URL</h4>
+          <div class="video-url-inputs">
+            <input type="url" id="videoUrlInput" placeholder="Paste YouTube, Vimeo, or direct video URL...">
+            <button class="video-btn" id="loadVideoBtn">Load Video</button>
+          </div>
+          <div class="video-examples">
+            <small>ℹ️ Supported: YouTube, Vimeo, MP4, WebM, OGV</small>
+          </div>
+        </div>
+        
+        <div class="video-builder-section">
+          <h4>📁 Upload Video File</h4>
+          <div class="video-upload-area" id="videoUploadArea">
+            <div class="upload-content">
+              <i class="fas fa-video"></i>
+              <p>Click to Upload Video File</p>
+              <small>Supports: MP4, WebM, OGV (Max 50MB)</small>
+            </div>
+            <input type="file" id="videoFileInput" accept="video/*" style="display: none;">
+          </div>
+        </div>
+        
+        <div class="video-preview-section" id="videoPreviewSection" style="display: none;">
+          <h4>🎨 Video Settings</h4>
+          <div class="video-preview-container" id="videoPreviewContainer"></div>
+          
+          <div class="video-controls">
+            <div class="control-group">
+              <label>📏 Size:</label>
+              <div class="size-buttons">
+                <button class="size-btn" data-size="400">Small</button>
+                <button class="size-btn active" data-size="560">Medium</button>
+                <button class="size-btn" data-size="800">Large</button>
+                <button class="size-btn" data-size="100%">Full Width</button>
+              </div>
+            </div>
+            
+            <div class="control-group">
+              <label>📍 Alignment:</label>
+              <div class="align-buttons">
+                <button class="align-btn" data-align="left"><i class="fas fa-align-left"></i> Left</button>
+                <button class="align-btn active" data-align="center"><i class="fas fa-align-center"></i> Center</button>
+                <button class="align-btn" data-align="right"><i class="fas fa-align-right"></i> Right</button>
+              </div>
+            </div>
+            
+            <div class="control-group">
+              <label>⚙️ Options:</label>
+              <div class="video-options">
+                <label><input type="checkbox" id="videoAutoplay"> ▶️ Autoplay</label>
+                <label><input type="checkbox" id="videoControls" checked> 🎮 Show Controls</label>
+                <label><input type="checkbox" id="videoLoop"> 🔁 Loop</label>
+                <label><input type="checkbox" id="videoMuted"> 🔇 Muted</label>
+              </div>
+            </div>
+            
+            <div class="insert-buttons">
+              <button class="video-btn primary" id="insertVideoBtn">✨ Insert Video</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    $('#ranjitVideoModal').html(videoBuilderHtml).css('display', 'flex');
+    
+    let currentVideoData = null;
+    
+    // Video upload area click
+    $('#videoUploadArea').on('click', function() {
+      $('#videoFileInput').click();
+    });
+    
+    // File input change
+    $('#videoFileInput').on('change', function() {
+      const file = this.files[0];
+      if (file) {
+        handleVideoFile(file);
+      }
+    });
+    
+    // Load video URL
+    $('#loadVideoBtn').on('click', function() {
+      const url = $('#videoUrlInput').val().trim();
+      if (url) {
+        handleVideoUrl(url);
+      }
+    });
+    
+    // Size buttons
+    $('.size-btn').on('click', function() {
+      $('.size-btn').removeClass('active');
+      $(this).addClass('active');
+      updateVideoPreview();
+    });
+    
+    // Alignment buttons
+    $('.align-btn').on('click', function() {
+      $('.align-btn').removeClass('active');
+      $(this).addClass('active');
+      updateVideoPreview();
+    });
+    
+    // Video options
+    $('.video-options input').on('change', function() {
+      updateVideoPreview();
+    });
+    
+    // Insert video
+    $('#insertVideoBtn').on('click', function() {
+      if (currentVideoData) {
+        insertVideo(editorInstance, currentVideoData);
+        $('#ranjitVideoModal').hide();
+      } else {
+        alert('Please select a video first!');
+      }
+    });
+    
+    function handleVideoFile(file) {
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        alert('Video file should be less than 50MB');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        showVideoPreview(e.target.result, 'file');
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    function handleVideoUrl(url) {
+      // Detect video type
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        const videoId = extractYouTubeId(url);
+        if (videoId) {
+          showVideoPreview(`https://www.youtube.com/embed/${videoId}`, 'youtube');
+        } else {
+          alert('Invalid YouTube URL');
+        }
+      } else if (url.includes('vimeo.com')) {
+        const videoId = extractVimeoId(url);
+        if (videoId) {
+          showVideoPreview(`https://player.vimeo.com/video/${videoId}`, 'vimeo');
+        } else {
+          alert('Invalid Vimeo URL');
+        }
+      } else if (url.match(/\.(mp4|webm|ogv)$/i)) {
+        showVideoPreview(url, 'direct');
+      } else {
+        alert('Unsupported video URL format');
+      }
+    }
+    
+    function extractYouTubeId(url) {
+      const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+      return match ? match[1] : null;
+    }
+    
+    function extractVimeoId(url) {
+      const match = url.match(/vimeo\.com\/(\d+)/);
+      return match ? match[1] : null;
+    }
+    
+    function showVideoPreview(src, type) {
+      currentVideoData = { src, type };
+      $('#videoPreviewSection').show();
+      updateVideoPreview();
+    }
+    
+    function updateVideoPreview() {
+      if (!currentVideoData) return;
+      
+      const size = $('.size-btn.active').data('size') || '560';
+      const align = $('.align-btn.active').data('align') || 'center';
+      const autoplay = $('#videoAutoplay').is(':checked');
+      const controls = $('#videoControls').is(':checked');
+      const loop = $('#videoLoop').is(':checked');
+      const muted = $('#videoMuted').is(':checked');
+      
+      let videoHtml = '';
+      let containerStyle = '';
+      
+      if (align === 'center') {
+        containerStyle = 'text-align: center; margin: 20px 0;';
+      } else if (align === 'right') {
+        containerStyle = 'text-align: right; margin: 20px 0;';
+      } else {
+        containerStyle = 'text-align: left; margin: 20px 0;';
+      }
+      
+      if (currentVideoData.type === 'youtube' || currentVideoData.type === 'vimeo') {
+        let embedSrc = currentVideoData.src;
+        const params = [];
+        
+        if (autoplay) params.push('autoplay=1');
+        if (!controls && currentVideoData.type === 'youtube') params.push('controls=0');
+        if (loop && currentVideoData.type === 'youtube') params.push('loop=1');
+        if (muted) params.push('muted=1');
+        
+        if (params.length > 0) {
+          embedSrc += '?' + params.join('&');
+        }
+        
+        const width = size === '100%' ? '100%' : size + 'px';
+        const height = size === '100%' ? '400px' : Math.round(size * 0.5625) + 'px';
+        
+        videoHtml = `<iframe src="${embedSrc}" width="${width}" height="${height}" frameborder="0" allowfullscreen style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`;
+      } else {
+        const width = size === '100%' ? '100%' : size + 'px';
+        const height = size === '100%' ? '400px' : Math.round(size * 0.5625) + 'px';
+        
+        let videoAttrs = `width="${width}" height="${height}" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"`;
+        if (controls) videoAttrs += ' controls';
+        if (autoplay) videoAttrs += ' autoplay';
+        if (loop) videoAttrs += ' loop';
+        if (muted) videoAttrs += ' muted';
+        
+        videoHtml = `<video ${videoAttrs}><source src="${currentVideoData.src}" type="video/mp4">Your browser does not support the video tag.</video>`;
+      }
+      
+      $('#videoPreviewContainer').html(`<div style="${containerStyle}">${videoHtml}</div>`);
+      
+      currentVideoData.size = size;
+      currentVideoData.align = align;
+      currentVideoData.autoplay = autoplay;
+      currentVideoData.controls = controls;
+      currentVideoData.loop = loop;
+      currentVideoData.muted = muted;
+    }
+  }
+  
+  function insertVideo(editorInstance, videoData) {
+    let containerStyle = 'margin: 20px 0;';
+    
+    if (videoData.align === 'center') {
+      containerStyle += ' text-align: center;';
+    } else if (videoData.align === 'right') {
+      containerStyle += ' text-align: right;';
+    } else {
+      containerStyle += ' text-align: left;';
+    }
+    
+    let videoHtml = '';
+    
+    if (videoData.type === 'youtube' || videoData.type === 'vimeo') {
+      let embedSrc = videoData.src;
+      const params = [];
+      
+      if (videoData.autoplay) params.push('autoplay=1');
+      if (!videoData.controls && videoData.type === 'youtube') params.push('controls=0');
+      if (videoData.loop && videoData.type === 'youtube') params.push('loop=1');
+      if (videoData.muted) params.push('muted=1');
+      
+      if (params.length > 0) {
+        embedSrc += '?' + params.join('&');
+      }
+      
+      const width = videoData.size === '100%' ? '100%' : videoData.size + 'px';
+      const height = videoData.size === '100%' ? '400px' : Math.round(videoData.size * 0.5625) + 'px';
+      
+      videoHtml = `<iframe src="${embedSrc}" width="${width}" height="${height}" frameborder="0" allowfullscreen style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 100%;"></iframe>`;
+    } else {
+      const width = videoData.size === '100%' ? '100%' : videoData.size + 'px';
+      const height = videoData.size === '100%' ? '400px' : Math.round(videoData.size * 0.5625) + 'px';
+      
+      let videoAttrs = `width="${width}" height="${height}" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 100%;"`;
+      if (videoData.controls) videoAttrs += ' controls';
+      if (videoData.autoplay) videoAttrs += ' autoplay';
+      if (videoData.loop) videoAttrs += ' loop';
+      if (videoData.muted) videoAttrs += ' muted';
+      
+      videoHtml = `<video ${videoAttrs}><source src="${videoData.src}" type="video/mp4">Your browser does not support the video tag.</video>`;
+    }
+    
+    const finalHtml = `<div class="video-container" style="${containerStyle}">${videoHtml}</div><p><br></p>`;
+    
+    editorInstance.$contentArea.focus();
+    editorInstance.exec('insertHTML', finalHtml);
+    
+    console.log('Video inserted:', finalHtml);
   }
   
   // Image builder function
@@ -945,10 +1245,42 @@
         <div class="table-builder-section">
           <h4>🎨 Table Templates</h4>
           <div class="table-templates">
-            <button class="template-btn" data-template="simple">📋 Simple Table</button>
-            <button class="template-btn" data-template="header">📊 With Header</button>
-            <button class="template-btn" data-template="striped">🦓 Striped Rows</button>
+            <button class="template-btn" data-template="simple">📋 Simple</button>
+            <button class="template-btn" data-template="header">📊 Header</button>
+            <button class="template-btn" data-template="striped">🦓 Striped</button>
             <button class="template-btn" data-template="bordered">🔲 Bordered</button>
+            <button class="template-btn" data-template="modern">✨ Modern</button>
+            <button class="template-btn" data-template="minimal">🎯 Minimal</button>
+          </div>
+        </div>
+        
+        <div class="table-builder-section">
+          <h4>🔧 Advanced Options</h4>
+          <div class="advanced-options">
+            <div class="option-group">
+              <label><input type="checkbox" id="tableResponsive" checked> 📱 Responsive</label>
+              <label><input type="checkbox" id="tableHover"> 🖱️ Hover Effects</label>
+              <label><input type="checkbox" id="tableSortable"> 🔄 Sortable Headers</label>
+            </div>
+            <div class="option-group">
+              <label>🎨 Color Theme:</label>
+              <select id="tableColorTheme">
+                <option value="blue">Blue</option>
+                <option value="green">Green</option>
+                <option value="purple">Purple</option>
+                <option value="red">Red</option>
+                <option value="orange">Orange</option>
+              </select>
+            </div>
+            <div class="option-group">
+              <label>📏 Table Width:</label>
+              <select id="tableWidth">
+                <option value="100">100% (Full Width)</option>
+                <option value="75">75%</option>
+                <option value="50">50%</option>
+                <option value="auto">Auto</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -967,7 +1299,7 @@
     $('#tableGridSelector .grid-preview').html(gridHtml);
     
     // Grid hover effects
-    $('.grid-cell').on('mouseenter', function() {
+    $(document).on('mouseenter', '.grid-cell', function() {
       const row = $(this).data('row');
       const col = $(this).data('col');
       
@@ -981,7 +1313,7 @@
     });
     
     // Grid click to create table
-    $('.grid-cell').on('click', function() {
+    $(document).on('click', '.grid-cell', function() {
       const rows = $(this).data('row');
       const cols = $(this).data('col');
       createTable(editorInstance, rows, cols, 'simple');
@@ -989,73 +1321,190 @@
     });
     
     // Custom table creation
-    $('#createCustomTable').on('click', function() {
+    $(document).on('click', '#createCustomTable', function() {
       const rows = parseInt($('#customRows').val());
       const cols = parseInt($('#customCols').val());
       if (rows > 0 && cols > 0) {
-        createTable(editorInstance, rows, cols, 'simple');
+        const options = {
+          responsive: $('#tableResponsive').is(':checked'),
+          hover: $('#tableHover').is(':checked'),
+          sortable: $('#tableSortable').is(':checked'),
+          colorTheme: $('#tableColorTheme').val(),
+          width: $('#tableWidth').val()
+        };
+        createAdvancedTable(editorInstance, rows, cols, 'simple', options);
         $('#ranjitTableModal').hide();
       }
     });
     
     // Template buttons
-    $('.template-btn').on('click', function() {
+    $(document).on('click', '.template-btn', function() {
       const template = $(this).data('template');
       const rows = parseInt($('#customRows').val()) || 3;
       const cols = parseInt($('#customCols').val()) || 3;
-      createTable(editorInstance, rows, cols, template);
+      
+      const options = {
+        responsive: $('#tableResponsive').is(':checked'),
+        hover: $('#tableHover').is(':checked'),
+        sortable: $('#tableSortable').is(':checked'),
+        colorTheme: $('#tableColorTheme').val(),
+        width: $('#tableWidth').val()
+      };
+      
+      createAdvancedTable(editorInstance, rows, cols, template, options);
       $('#ranjitTableModal').hide();
     });
   }
   
-  // Create table with different styles
-  function createTable(editorInstance, rows, cols, template) {
-    let tableStyle = '';
-    let headerRow = false;
+  // Create advanced table with modern features
+  function createAdvancedTable(editorInstance, rows, cols, template, options = {}) {
+    const colorThemes = {
+      blue: { primary: '#667eea', secondary: '#764ba2', light: '#f0f4ff' },
+      green: { primary: '#28a745', secondary: '#20c997', light: '#f0fff4' },
+      purple: { primary: '#6f42c1', secondary: '#e83e8c', light: '#f8f0ff' },
+      red: { primary: '#dc3545', secondary: '#fd7e14', light: '#fff5f5' },
+      orange: { primary: '#fd7e14', secondary: '#ffc107', light: '#fff8f0' }
+    };
     
-    switch(template) {
-      case 'simple':
-        tableStyle = 'border-collapse: collapse; width: 100%; margin: 15px 0;';
-        break;
-      case 'header':
-        tableStyle = 'border-collapse: collapse; width: 100%; margin: 15px 0;';
-        headerRow = true;
-        break;
-      case 'striped':
-        tableStyle = 'border-collapse: collapse; width: 100%; margin: 15px 0;';
-        break;
-      case 'bordered':
-        tableStyle = 'border-collapse: collapse; width: 100%; margin: 15px 0; border: 2px solid #667eea;';
-        break;
+    const theme = colorThemes[options.colorTheme] || colorThemes.blue;
+    const tableId = 'table-' + Math.random().toString(36).substr(2, 9);
+    
+    let tableClasses = 'ranjit-table';
+    if (options.responsive) tableClasses += ' responsive-table';
+    if (options.hover) tableClasses += ' hover-table';
+    if (options.sortable) tableClasses += ' sortable-table';
+    
+    let tableStyle = `border-collapse: collapse; width: ${options.width === 'auto' ? 'auto' : options.width + '%'}; margin: 20px 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);`;
+    
+    let table = `<table id="${tableId}" class="${tableClasses}" style="${tableStyle}">`;
+    
+    // Add thead for header templates
+    if (template === 'header' || template === 'modern' || options.sortable) {
+      table += '<thead>';
+    } else {
+      table += '<tbody>';
     }
     
-    let table = `<table style="${tableStyle}"><tbody>`;
+    const hasHeader = (template === 'header' || template === 'modern' || options.sortable);
     
     for (let r = 0; r < rows; r++) {
       table += '<tr>';
+      
       for (let c = 0; c < cols; c++) {
-        let cellStyle = 'padding: 12px; border: 1px solid #ddd; text-align: left;';
+        let cellStyle = 'padding: 15px 12px; border: 1px solid #e1e8ed; text-align: left; transition: all 0.3s ease;';
         let cellContent = '&nbsp;';
         
-        if (headerRow && r === 0) {
-          cellStyle += ' background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-weight: bold;';
-          cellContent = `Header ${c + 1}`;
+        // Header row styling
+        if (hasHeader && r === 0) {
+          cellStyle += ` background: linear-gradient(135deg, ${theme.primary}, ${theme.secondary}); color: white; font-weight: 600; font-size: 14px;`;
+          if (options.sortable) {
+            cellContent = `<span class="sortable-header">Header ${c + 1} <i class="fas fa-sort"></i></span>`;
+          } else {
+            cellContent = `Header ${c + 1}`;
+          }
           table += `<th style="${cellStyle}">${cellContent}</th>`;
         } else {
-          if (template === 'striped' && r % 2 === 1) {
-            cellStyle += ' background: #f8f9fa;';
+          // Body cell styling based on template
+          const bodyRowIndex = hasHeader ? r - 1 : r; // Adjust for header row
+          
+          switch(template) {
+            case 'striped':
+              if (bodyRowIndex % 2 === 1) cellStyle += ` background: ${theme.light};`;
+              break;
+            case 'bordered':
+              cellStyle += ` border: 2px solid ${theme.primary};`;
+              break;
+            case 'modern':
+              cellStyle += ` background: #fafbfc;`;
+              if (bodyRowIndex % 2 === 0) cellStyle += ` background: ${theme.light};`;
+              break;
+            case 'minimal':
+              cellStyle += ' border: none; border-bottom: 1px solid #e1e8ed;';
+              break;
           }
-          if (template === 'bordered') {
-            cellStyle += ' border: 1px solid #667eea;';
+          
+          if (options.hover) {
+            cellStyle += ` cursor: pointer;`;
           }
+          
           table += `<td style="${cellStyle}">${cellContent}</td>`;
         }
       }
+      
       table += '</tr>';
+      
+      // Close thead and start tbody after header row
+      if (hasHeader && r === 0) {
+        table += '</thead><tbody>';
+      }
     }
     
-    table += '</tbody></table><p><br></p>';
+    table += '</tbody></table>';
+    
+    // Add responsive wrapper if needed
+    if (options.responsive) {
+      table = `<div class="table-responsive" style="overflow-x: auto; margin: 20px 0;">${table}</div>`;
+    }
+    
+    table += '<p><br></p>';
+    
     editorInstance.exec('insertHTML', table);
+    
+    // Add sortable functionality if enabled
+    if (options.sortable) {
+      setTimeout(() => {
+        addTableSortability(tableId);
+      }, 100);
+    }
+  }
+  
+  // Add table sorting functionality
+  function addTableSortability(tableId) {
+    $(document).on('click', `#${tableId} .sortable-header`, function() {
+      const $table = $(this).closest('table');
+      const columnIndex = $(this).closest('th').index();
+      const $tbody = $table.find('tbody');
+      const rows = $tbody.find('tr').toArray();
+      
+      // Toggle sort direction
+      const isAsc = $(this).hasClass('sort-asc');
+      $table.find('.sortable-header').removeClass('sort-asc sort-desc');
+      $table.find('.sortable-header i').removeClass('fa-sort-up fa-sort-down').addClass('fa-sort');
+      
+      if (isAsc) {
+        $(this).addClass('sort-desc');
+        $(this).find('i').removeClass('fa-sort').addClass('fa-sort-down');
+      } else {
+        $(this).addClass('sort-asc');
+        $(this).find('i').removeClass('fa-sort').addClass('fa-sort-up');
+      }
+      
+      // Sort rows
+      rows.sort((a, b) => {
+        const aText = $(a).find('td').eq(columnIndex).text().trim();
+        const bText = $(b).find('td').eq(columnIndex).text().trim();
+        
+        if (isAsc) {
+          return bText.localeCompare(aText);
+        } else {
+          return aText.localeCompare(bText);
+        }
+      });
+      
+      // Reorder rows
+      $tbody.empty().append(rows);
+    });
+  }
+  
+  // Legacy function for backward compatibility
+  function createTable(editorInstance, rows, cols, template) {
+    createAdvancedTable(editorInstance, rows, cols, template, {
+      responsive: true,
+      hover: false,
+      sortable: false,
+      colorTheme: 'blue',
+      width: '100'
+    });
   }
 
   // Shared event handlers
@@ -1096,13 +1545,30 @@
       $('#gridInfo').text('Hover to select');
     });
     
+    // Video upload area drag and drop
+    $(document).on('dragover', '#videoUploadArea', function(e) {
+      e.preventDefault();
+      $(this).addClass('drag-over');
+    }).on('dragleave', '#videoUploadArea', function() {
+      $(this).removeClass('drag-over');
+    }).on('drop', '#videoUploadArea', function(e) {
+      e.preventDefault();
+      $(this).removeClass('drag-over');
+      const file = e.originalEvent.dataTransfer.files[0];
+      if (file && file.type.startsWith('video/')) {
+        $('#videoFileInput')[0].files = e.originalEvent.dataTransfer.files;
+        $('#videoFileInput').trigger('change');
+      }
+    });
+    
     // Modal events
     $(document)
       .on("click", ".ranjit-modal-overlay, .ranjit-modal-close", function () {
         $(".ranjit-modal-overlay").hide();
       })
       .on("click", ".ranjit-modal-content", (e) => e.stopPropagation())
-      .on("click", ".table-builder-modal", (e) => e.stopPropagation());
+      .on("click", ".table-builder-modal", (e) => e.stopPropagation())
+      .on("click", ".video-builder-modal", (e) => e.stopPropagation());
       
     // Prevent form submission on Enter in editor
     $(document).on('keydown', '.ranjit-editor-content', function(e) {

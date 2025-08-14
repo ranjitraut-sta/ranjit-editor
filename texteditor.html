@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ranjit Editor - jQuery Plugin</title>
+
+    <!-- 1. DEPENDENCIES: Font Awesome & jQuery -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <link rel="stylesheet" href="assets/main.css" />
+  </head>
+  <body>
+    <div class="page-container">
+      <div class="header-controls">
+        <h1>Ranjit Editor Plugin Demo</h1>
+        <button id="darkModeToggle" class="dark-mode-btn">
+          <i class="fas fa-moon"></i> Dark Mode
+        </button>
+      </div>
+
+      <form
+        id="myForm"
+        onsubmit="alert('Form submitted! Check console for data.'); console.log($(this).serialize()); return false;"
+      >
+        <div style="margin-bottom: 2rem">
+          <label for="editor1">Post Content:</label>
+          <!-- THIS IS THE TEXTAREA YOU WILL TRANSFORM -->
+          <textarea name="content" id="editor1" rows="10">
+                <h2>Welcome to Ranjit Editor!</h2>
+                <p>This is some <b>initial content</b> that was already in the textarea.</p>
+            </textarea
+          >
+        </div>
+
+        <button
+          type="submit"
+          style="
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+          "
+        >
+          Submit Post
+        </button>
+      </form>
+    </div>
+
+    <!-- Hidden elements for advanced features -->
+    <input type="file" id="ranjitImageUpload" accept="image/*" style="display: none;">
+    <div id="ranjitHelpModal" class="ranjit-modal-overlay"></div>
+    <div id="ranjitEmojiModal" class="ranjit-modal-overlay"></div>
+    
+    <script src="assets/main.js"></script>
+    <script>
+      $(document).ready(function () {
+        // Initialize editor with advanced options
+        $("#editor1").ranjitEditor({
+          autosave: true,
+          wordCount: true,
+          darkMode: false,
+          fullscreen: true,
+          emoji: true
+        });
+        
+        // Dark mode toggle
+        $('#darkModeToggle').click(function() {
+          $('body').toggleClass('dark-mode');
+          const isDark = $('body').hasClass('dark-mode');
+          $(this).html(isDark ? '<i class="fas fa-sun"></i> Light Mode' : '<i class="fas fa-moon"></i> Dark Mode');
+          localStorage.setItem('darkMode', isDark);
+        });
+        
+        // Load saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+          $('body').addClass('dark-mode');
+          $('#darkModeToggle').html('<i class="fas fa-sun"></i> Light Mode');
+        }
+      });
+    </script>
+  </body>
+</html>

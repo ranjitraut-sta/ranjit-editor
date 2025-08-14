@@ -1,0 +1,63 @@
+{
+  "name": "ranjit-editor",
+  "version": "2.0.0",
+  "description": "A powerful, feature-rich jQuery plugin that transforms textareas into advanced rich text editors",
+  "main": "assets/main.js",
+  "style": "assets/main.css",
+  "keywords": [
+    "jquery",
+    "plugin",
+    "rich-text-editor",
+    "wysiwyg",
+    "text-editor",
+    "contenteditable",
+    "html-editor",
+    "javascript",
+    "responsive",
+    "dark-mode"
+  ],
+  "author": {
+    "name": "Ranjit Editor Team",
+    "email": "support@ranjiteditor.com",
+    "url": "https://ranjiteditor.com"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/ranjit-editor/ranjit-editor",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ranjit-editor/ranjit-editor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ranjit-editor/ranjit-editor/issues"
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "dependencies": {
+    "jquery": ">=3.6.0"
+  },
+  "peerDependencies": {
+    "jquery": ">=3.6.0"
+  },
+  "devDependencies": {},
+  "files": [
+    "assets/",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "echo 'Build process for minification'",
+    "test": "echo 'Test suite'",
+    "demo": "echo 'Start demo server'"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/ranjit-editor"
+  }
+}

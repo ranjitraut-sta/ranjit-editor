@@ -342,15 +342,35 @@
         instance.updateToolbar();
       });
 
-      // Toolbar events
-      $editor.find("[data-command]").on("click change", function (e) {
+      // Separate event handling for buttons and selects
+      $editor.find(".tool-button").on("click", function (e) {
         e.preventDefault();
         activeEditorInstance = instance;
         const command = $(this).data("command");
-        const value = $(this).is("select") ? $(this).val() : null;
         const selection = instance.saveSelection();
+        handleCommand(command, null, selection);
+      });
+      
+      $editor.find(".tool-select").on("change", function (e) {
+        activeEditorInstance = instance;
+        const command = $(this).data("command");
+        const value = $(this).val();
+        const selection = instance.saveSelection();
+        handleCommand(command, value, selection);
+      });
+      
+      // Color picker events
+      $editor.find('input[type="color"]').on('change', function() {
+        activeEditorInstance = instance;
+        const command = $(this).data('command');
+        const value = $(this).val();
+        const selection = instance.saveSelection();
+        handleCommand(command, value, selection);
+      });
+      
+      function handleCommand(command, value, selection) {
 
-        switch (command) {
+          switch (command) {
           case 'undo': instance.undo(); break;
           case 'redo': instance.redo(); break;
           
@@ -452,11 +472,22 @@
             break;
           }
           
-          default: {
-            instance.exec(command, value);
+            case "formatBlock":
+            case "fontName":
+            case "fontSize":
+            case "foreColor":
+            case "hiliteColor":
+              if (value) {
+                instance.restoreSelection(selection);
+                instance.exec(command, value);
+              }
+              break;
+            
+            default: {
+              instance.exec(command, value);
+            }
           }
         }
-      });
     });
   };
 

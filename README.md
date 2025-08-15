@@ -9,6 +9,7 @@ A powerful, feature-rich, and modern jQuery plugin that transforms simple textar
 ## ✨ Features
 
 ### 🎯 Core Features
+
 - **Undo/Redo System** - Full history management with 50 levels
 - **Auto-save** - Automatic content saving every 5 seconds
 - **Word & Character Count** - Real-time statistics
@@ -16,6 +17,7 @@ A powerful, feature-rich, and modern jQuery plugin that transforms simple textar
 - **Fullscreen Mode** - Distraction-free editing experience
 
 ### 📝 Rich Text Formatting
+
 - **Advanced Headings** - H1 to H6 with custom styling
 - **Font Selection** - 7 professional fonts
 - **Font Sizes** - 8pt to 36pt range
@@ -25,6 +27,7 @@ A powerful, feature-rich, and modern jQuery plugin that transforms simple textar
 - **Color Picker** - Text and background colors
 
 ### 🎨 Media & Content
+
 - **Drag & Drop Images** - Simply drag images into the editor
 - **Image Compression** - Auto-resize and optimize large images
 - **Emoji Picker** - 80+ beautiful emojis
@@ -34,6 +37,7 @@ A powerful, feature-rich, and modern jQuery plugin that transforms simple textar
 - **Horizontal Rules** - Visual content separation
 
 ### 💻 Developer Features
+
 - **HTML Source View** - Direct HTML editing
 - **Keyboard Shortcuts** - Professional shortcuts (Ctrl+B, I, U, Z, Y, S)
 - **Plugin Options** - Highly configurable
@@ -46,19 +50,27 @@ A powerful, feature-rich, and modern jQuery plugin that transforms simple textar
 **That's it! No hidden elements, no complex setup - just include the files and initialize!**
 
 ### 1. Include Dependencies
+
 ```html
 <!-- Font Awesome for icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+/>
 
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
 <!-- Ranjit Editor CSS & JS -->
-<link rel="stylesheet" href="assets/main.css">
-<script src="assets/main.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/gh/ranjitraut-sta/ranjit-editor@main/assets/main.css"
+/>
+<script src="https://cdn.jsdelivr.net/gh/ranjitraut-sta/ranjit-editor@main/assets/main.js"></script>
 ```
 
 ### 2. HTML Structure
+
 ```html
 <!-- Just add your textarea - no hidden elements needed! -->
 <textarea id="myEditor" name="content">
@@ -68,59 +80,62 @@ A powerful, feature-rich, and modern jQuery plugin that transforms simple textar
 ```
 
 ### 3. Initialize Plugin
+
 ```javascript
-$(document).ready(function() {
+$(document).ready(function () {
   // Basic usage
-  $('#myEditor').ranjitEditor();
-  
+  $("#myEditor").ranjitEditor();
+
   // Or with custom options
-  $('#myEditor').ranjitEditor({
+  $("#myEditor").ranjitEditor({
     autosave: true,
     wordCount: true,
     darkMode: false,
     fullscreen: true,
     emoji: true,
-    autosaveInterval: 5000
+    autosaveInterval: 5000,
   });
 });
 ```
 
 ## ⚙️ Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `autosave` | Boolean | `true` | Enable automatic content saving |
-| `wordCount` | Boolean | `true` | Show word and character count |
-| `darkMode` | Boolean | `false` | Start in dark mode |
-| `fullscreen` | Boolean | `true` | Enable fullscreen mode |
-| `emoji` | Boolean | `true` | Enable emoji picker |
-| `autosaveInterval` | Number | `5000` | Auto-save interval in milliseconds |
+| Option             | Type    | Default | Description                        |
+| ------------------ | ------- | ------- | ---------------------------------- |
+| `autosave`         | Boolean | `true`  | Enable automatic content saving    |
+| `wordCount`        | Boolean | `true`  | Show word and character count      |
+| `darkMode`         | Boolean | `false` | Start in dark mode                 |
+| `fullscreen`       | Boolean | `true`  | Enable fullscreen mode             |
+| `emoji`            | Boolean | `true`  | Enable emoji picker                |
+| `autosaveInterval` | Number  | `5000`  | Auto-save interval in milliseconds |
 
 ## 🎮 Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl + B` | Bold text |
-| `Ctrl + I` | Italic text |
-| `Ctrl + U` | Underline text |
-| `Ctrl + Z` | Undo |
-| `Ctrl + Y` | Redo |
-| `Ctrl + S` | Manual save |
-| `Ctrl + A` | Select all |
-| `Ctrl + Enter` | Submit form |
+| Shortcut       | Action         |
+| -------------- | -------------- |
+| `Ctrl + B`     | Bold text      |
+| `Ctrl + I`     | Italic text    |
+| `Ctrl + U`     | Underline text |
+| `Ctrl + Z`     | Undo           |
+| `Ctrl + Y`     | Redo           |
+| `Ctrl + S`     | Manual save    |
+| `Ctrl + A`     | Select all     |
+| `Ctrl + Enter` | Submit form    |
 
 ## 🎨 Themes & Customization
 
 ### Dark Mode
+
 ```javascript
 // Enable dark mode programmatically
-$('body').addClass('dark-mode');
+$("body").addClass("dark-mode");
 
 // Toggle dark mode
-$('body').toggleClass('dark-mode');
+$("body").toggleClass("dark-mode");
 ```
 
 ### Custom Styling
+
 ```css
 /* Override default colors */
 .ranjit-editor-container {
@@ -132,6 +147,7 @@ $('body').toggleClass('dark-mode');
 ## 📱 Mobile Support
 
 Ranjit Editor is fully responsive and touch-friendly:
+
 - Touch-optimized toolbar buttons
 - Responsive design for all screen sizes
 - Mobile-friendly modals and dialogs
@@ -140,33 +156,38 @@ Ranjit Editor is fully responsive and touch-friendly:
 ## 🔧 Advanced Usage
 
 ### Multiple Editors
+
 ```javascript
 // Initialize multiple editors
-$('.editor').ranjitEditor({
+$(".editor").ranjitEditor({
   autosave: true,
-  wordCount: true
+  wordCount: true,
 });
 ```
 
 ### Custom Event Handling
+
 ```javascript
-$('#myEditor').ranjitEditor({
-  autosave: true
-}).on('ranjit:save', function(e, content) {
-  console.log('Content saved:', content);
-});
+$("#myEditor")
+  .ranjitEditor({
+    autosave: true,
+  })
+  .on("ranjit:save", function (e, content) {
+    console.log("Content saved:", content);
+  });
 ```
 
 ### Programmatic Control
+
 ```javascript
 // Get editor instance
-const editor = $('#myEditor').data('ranjitEditor');
+const editor = $("#myEditor").data("ranjitEditor");
 
 // Get content
 const content = editor.getContent();
 
 // Set content
-editor.setContent('<p>New content</p>');
+editor.setContent("<p>New content</p>");
 
 // Toggle fullscreen
 editor.toggleFullscreen();
@@ -222,4 +243,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ by Ranjit Editor Team**
 
-*Transform your textareas into powerful rich text editors!*
+_Transform your textareas into powerful rich text editors!_

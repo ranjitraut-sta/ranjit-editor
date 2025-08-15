@@ -235,12 +235,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 📧 Email: support@ranjiteditor.com
+- 📧 Email: ranjitraut877@gmail.com
 - 🐛 Issues: [GitHub Issues](https://github.com/ranjit-editor/ranjit-editor/issues)
-- 📖 Documentation: [Full Docs](https://ranjiteditor.com/docs)
+- 📖 Documentation: [Full Docs](https://ranjieditor.kesug.com/)
 
 ---
 
-**Made with ❤️ by Ranjit Editor Team**
+**Made with ❤️ by Ranjit Raut Team**
 
 _Transform your textareas into powerful rich text editors!_

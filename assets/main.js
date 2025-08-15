@@ -282,46 +282,18 @@
       }).on('drop', (e) => {
         e.preventDefault();
         $contentArea.removeClass('drag-over');
-        const files = e.originalEvent.dataTransfer.files;
-        if (files.length > 0 && files[0].type.startsWith('image/')) {
+        const files = Array.from(e.originalEvent.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+        
+        if (files.length === 1) {
+          // Single image - show image builder
           activeEditorInstance = instance;
           showImageBuilder(instance);
-          // Auto-load the dropped file
           setTimeout(() => {
-            const file = files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-              const img = new Image();
-              img.onload = function() {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                let { width, height } = img;
-                const maxSize = 1200;
-                if (width > maxSize || height > maxSize) {
-                  if (width > height) {
-                    height = (height * maxSize) / width;
-                    width = maxSize;
-                  } else {
-                    width = (width * maxSize) / height;
-                    height = maxSize;
-                  }
-                }
-                canvas.width = width;
-                canvas.height = height;
-                ctx.drawImage(img, 0, 0, width, height);
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                
-                // Show in image builder
-                if ($('#imagePreview').length) {
-                  $('#imagePreview').attr('src', compressedDataUrl);
-                  $('#imagePreviewSection').show();
-                  window.currentImageData = { src: compressedDataUrl, width, height, size: 50, align: 'left', display: 'inline', alt: 'Image' };
-                }
-              };
-              img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+            handleSingleDroppedImage(files[0]);
           }, 100);
+        } else if (files.length > 1) {
+          // Multiple images - create gallery directly
+          handleMultipleDroppedImages(files, instance);
         }
       });
       
@@ -1874,6 +1846,145 @@
         $('#ranjitVideoModal').hide();
       }
     });
+  }
+  
+  // Handle single dropped image
+  function handleSingleDroppedImage(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        let { width, height } = img;
+        const maxSize = 1200;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          } else {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        
+        if ($('#imagePreview').length) {
+          $('#imagePreview').attr('src', compressedDataUrl);
+          $('#imagePreviewSection').show();
+          window.currentImageData = { src: compressedDataUrl, width, height, size: 50, align: 'left', display: 'inline', alt: 'Image' };
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  
+  // Handle multiple dropped images
+  function handleMultipleDroppedImages(files, editorInstance) {
+    const validFiles = files.filter(file => file.size <= 2 * 1024 * 1024);
+    
+    if (validFiles.length === 0) {
+      alert('No valid images found. Please select image files under 2MB.');
+      return;
+    }
+    
+    let processedImages = [];
+    let processed = 0;
+    
+    validFiles.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          let { width, height } = img;
+          const maxSize = 800;
+          if (width > maxSize || height > maxSize) {
+            if (width > height) {
+              height = (height * maxSize) / width;
+              width = maxSize;
+            } else {
+              width = (width * maxSize) / height;
+              height = maxSize;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          processedImages[index] = {
+            src: compressedDataUrl,
+            width,
+            height,
+            alt: `Gallery Image ${index + 1}`
+          };
+          
+          processed++;
+          if (processed === validFiles.length) {
+            // All images processed, create gallery
+            insertDroppedGallery(editorInstance, processedImages.filter(img => img));
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  
+  // Insert dropped gallery
+  function insertDroppedGallery(editorInstance, images) {
+    if (images.length < 2) {
+      // If less than 2 images, insert as individual images
+      images.forEach(img => {
+        const imageData = {
+          src: img.src,
+          size: 50,
+          align: 'left',
+          display: 'inline',
+          alt: img.alt
+        };
+        insertImage(editorInstance, imageData);
+      });
+      return;
+    }
+    
+    // Create responsive gallery layout
+    let galleryHtml = '<div class="drag-drop-gallery" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; padding: 15px; background: rgba(102, 126, 234, 0.05); border-radius: 12px; border: 2px dashed rgba(102, 126, 234, 0.2);">';
+    
+    images.forEach((img, index) => {
+      galleryHtml += `
+        <div class="gallery-item" style="position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+          <img src="${img.src}" alt="${img.alt}" style="width: 100%; height: 200px; object-fit: cover; display: block; cursor: pointer;" class="editable-media" data-type="image">
+          <div class="gallery-overlay" style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: white; padding: 10px; font-size: 12px; text-align: center;">
+            Image ${index + 1}
+          </div>
+        </div>
+      `;
+    });
+    
+    galleryHtml += '</div><p><br></p>';
+    
+    editorInstance.$contentArea.focus();
+    editorInstance.exec('insertHTML', galleryHtml);
+    
+    // Show success message
+    setTimeout(() => {
+      const notification = $(`
+        <div style="position: fixed; top: 20px; right: 20px; background: linear-gradient(45deg, #28a745, #20c997); color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; font-weight: 600;">
+          ✅ ${images.length} images added to gallery!
+        </div>
+      `);
+      $('body').append(notification);
+      setTimeout(() => notification.fadeOut(() => notification.remove()), 3000);
+    }, 100);
   }
 
 })(jQuery);
